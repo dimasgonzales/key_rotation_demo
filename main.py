@@ -8,7 +8,7 @@
 # ///
 
 
-from utilities.python_keycrypto_utlilities import generate_rsa_keypair
+from utilities.keycrypto_utlilities import generate_rsa_keypair_with_kms
 from utilities.aws_secrets_utilities import create_secret, put_secret, check_if_secret_exists
 # from utilities.snowflake_utilities import update_snowflake_user_public_key
 from utilities.logger import setup_logging
@@ -23,8 +23,7 @@ def main():
     TARGET_SNOWFLAKE_USER = os.getenv("TARGET_SNOWFLAKE_USER")
     TARGET_AWS_KMS_ARN = os.getenv("TARGET_AWS_KMS_ARN")
 
-    private_pem_key, public_pem_key = generate_rsa_keypair()
-    # TODO: implement pem key creation with AWS KMS
+    private_pem_key, public_pem_key = generate_rsa_keypair_with_kms(TARGET_AWS_KMS_ARN)
 
     # check if an AWS Secrets Manager exists for the target user
     # if not, create one
@@ -59,6 +58,9 @@ def main():
     #     user=TARGET_SNOWFLAKE_USER,
     #     public_key=public_pem_key,
     # )
+
+
+
 
 
 if __name__ == '__main__':
