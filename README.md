@@ -2,6 +2,27 @@
 
 This Python script automates the rotation of asymmetric PEM key pairs used by Snowflake Service Accounts for authentication. It handles the complete lifecycle of key rotation including generation, secure storage in AWS Secrets Manager, and Snowflake user updates.
 
+The following sequence diagram illustrates the key rotation process:
+
+```mermaid
+sequenceDiagram
+    participant Script
+    participant AWSKMS
+    participant AWSSecretsManager
+    participant Snowflake
+
+   Script->>AWSKMS: Request Key Generation
+   AWSKMS->>Script: Return 2048-bit RSA Key Pair
+   Script->>AWSSecretsManager: Check Secret Exists
+   alt Secret Exists
+      AWSSecretsManager->>Script: Update existing Secret with new Keys
+   else No Secret Found
+      AWSSecretsManager->>Script: Create a new Secret with new Keys
+   end
+   Script->>Snowflake: Alter Snowflake User with new Public Key
+```
+
+
 ## Features
 
 - Generates 2048-bit RSA key pairs with strong encryption
@@ -9,8 +30,6 @@ This Python script automates the rotation of asymmetric PEM key pairs used by Sn
 - Automatically updates Snowflake user credentials
 - Comprehensive logging with rotation support
 - AWS KMS integration for additional security
-
-
 
 ## Prerequisites
 
@@ -24,7 +43,8 @@ This Python script automates the rotation of asymmetric PEM key pairs used by Sn
 ## Installation
 
 1. Clone the repository
-2. Install and run using uv:
+2. Setup environment variables
+3. Install and run using uv:
 ```bash
 uv run main.py
 ```
@@ -44,22 +64,26 @@ main.py:
 
 ## Configuration
 
-### AWS Configuration
-
-1. Configure AWS credentials with access to Secrets Manager
-2. Update `secrets_config.yml` with your settings:
-```yaml
-kms_key_arn: "your-kms-key-arn"
-secrets_manager_name: "your-secrets-config-name"
-```
-
 ### Environment Variables
 
-Create a `.env` file with required variables:
+Copy .env.sample to .env:
+```bash
+cp .env.sample .env
 ```
-AWS_ACCESS_KEY_ID=<add-your-access-id>
-AWS_SECRET_ACCESS_KEY=<add-your-access-secret>
-```
+
+Update the `.env` file with your credentials:
+
+
+### AWS Secrets Manager
+
+The script uses a standardized naming convention for secrets:
+- Private key: `snowflake_service_accounts/{TARGET_SNOWFLAKE_USERNAME}/private_key`
+- Public key: `snowflake_service_accounts/{TARGET_SNOWFLAKE_USERNAME}/public_key`
+
+Both secrets must either exist or not exist together. The script will:
+- Create both secrets if neither exists
+- Update both secrets if both exist
+- Raise an error if only one secret exists (invalid state)
 
 ### Snowflake Configuration
 
@@ -70,28 +94,8 @@ Ensure your Snowflake service account has the necessary permissions to:
 
 ## Usage
 
-The following sequence diagram illustrates the key rotation process:
 
-```mermaid
-sequenceDiagram
-    participant Script
-    participant AWSSecretsManager
-    participant Snowflake
 
-    Script->>Script: Generate 2048-bit RSA Key Pair
-    Script->>AWSSecretsManager: Store Keys (Create/Update)
-    Script->>Snowflake: Update Public Key
-```
-
-1. Generate new key pairs:
-```bash
-uv run create_asymetric_keys.py
-```
-This will create:
-- `keys/private_key.pem`: Encrypted private key
-- `keys/public_key.pem`: Public key
-
-2. Run the key rotation script:
 ```bash
 uv run main.py
 ```
