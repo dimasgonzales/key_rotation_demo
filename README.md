@@ -15,9 +15,9 @@ sequenceDiagram
    AWSKMS->>Script: Return 2048-bit RSA Key Pair
    Script->>AWSSecretsManager: Check Secret Exists
    alt Secret Exists
-      AWSSecretsManager->>Script: Update existing Secret with new Keys
+      Script->>AWSSecretsManager: Update existing Secret with new Keys
    else No Secret Found
-      AWSSecretsManager->>Script: Create a new Secret with new Keys
+      Script->>AWSSecretsManager: Create a new Secret with new Keys
    end
    Script->>Snowflake: Alter Snowflake User with new Public Key
 ```
